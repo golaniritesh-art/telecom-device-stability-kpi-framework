@@ -1,6 +1,8 @@
 import sqlite3
 from pathlib import Path
 
+import pandas as pd
+
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DB_FILE = BASE_DIR / "database" / "telemetry.db"
@@ -36,6 +38,23 @@ class TelecomValidationLibrary:
 
     def get_son_recommendation_count(self):
         return int(self._query_one("SELECT COUNT(*) FROM son_recommendations"))
+
+    def summarize_csv_scenario(self, csv_path):
+        """Read a scenario CSV and return counts for data-driven Robot tests."""
+        df = pd.read_csv(BASE_DIR / csv_path)
+
+        return {
+            "total_records": int(len(df)),
+            "pass_count": int((df["status"] == "PASS").sum()),
+            "warn_count": int((df["status"] == "WARN").sum()),
+            "fail_count": int((df["status"] == "FAIL").sum()),
+            "modem_reset_count": int((df["event_type"] == "MODEM_RESET").sum()),
+            "network_lost_count": int((df["event_type"] == "NETWORK_LOST").sum()),
+            "handover_failure_count": int((df["event_type"] == "HANDOVER_FAILURE").sum()),
+            "call_drop_count": int((df["event_type"] == "CALL_DROP").sum()),
+            "avg_latency_ms": round(float(df["latency_ms"].mean()), 2),
+            "avg_packet_loss_pct": round(float(df["packet_loss_pct"].mean()), 2),
+        }
 
     def _success_rate(self, success_event, filter_clause):
         total = self._query_one(f"SELECT COUNT(*) FROM clean_telemetry_events WHERE {filter_clause}")

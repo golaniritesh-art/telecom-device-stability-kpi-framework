@@ -55,6 +55,37 @@ The SQLite database is created at:
 database/telemetry.db
 ```
 
+## Dataset Scenarios
+
+The generator supports three presentation datasets:
+
+| Scenario | Command | What it shows |
+| --- | --- | --- |
+| Stable firmware / all PASS | `python src/generate_data.py --scenario stable` | Healthy firmware with clean LTE/5G/NTN registration, good RF KPIs, low latency, low packet loss, and all generated records passing KPI thresholds. |
+| Modem reset issue | `python src/generate_data.py --scenario modem_resets` | A realistic device stability issue where modem reset events are unusually high, useful for showing firmware or device-team investigation. |
+| Network instability | `python src/generate_data.py --scenario network_instability` | Weak signal, low SINR, high packet loss, higher latency, handover failures, call drops, and network lost events. |
+
+After generating any scenario, run:
+
+```bash
+python src/ingest.py
+streamlit run dashboard/app.py
+```
+
+To generate all three standalone CSV files for review or demo data comparison:
+
+```bash
+python src/generate_data.py --scenario all --records 1000
+```
+
+This creates:
+
+```text
+data/scenarios/stable_firmware_all_pass.csv
+data/scenarios/modem_reset_issue.csv
+data/scenarios/network_instability.csv
+```
+
 ## Run Pytest
 
 ```bash
@@ -74,6 +105,12 @@ Robot reports will be written to:
 ```text
 robot_results/
 ```
+
+The suite `robot_tests/validate_dataset_scenarios.robot` uses Robot Framework `Test Template` syntax, which works like a Cucumber-style scenario outline. It runs the same validation keyword against three CSV datasets:
+
+- stable firmware / all PASS
+- modem reset issue
+- network instability
 
 ## Launch Dashboard
 
