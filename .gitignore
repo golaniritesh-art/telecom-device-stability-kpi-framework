@@ -1,0 +1,30 @@
+# Python cache
+__pycache__/
+*.pyc
+
+# Virtual environments
+venv/
+.venv/
+
+# SQLite database
+database/*.db
+
+# Generated CSV data
+data/raw/*.csv
+data/reference/*.csv
+
+# Pytest cache
+.pytest_cache/
+
+# Robot Framework reports
+robot_results/
+
+# Streamlit cache
+.streamlit/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# VS Code settings
+.vscode/
