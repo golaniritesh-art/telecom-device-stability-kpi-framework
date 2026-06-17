@@ -29,13 +29,63 @@ def safe_rate(success_count, total_count):
     return round((success_count / total_count) * 100, 2)
 
 
+def build_firmware_stability_summary(df):
+    """Summarize whether each firmware looks stable from device and network KPIs."""
+    if df.empty:
+        return pd.DataFrame()
+
+    summary = (
+        df.groupby("firmware_version")
+        .agg(
+            total_events=("event_id", "count"),
+            devices_tested=("device_id", "nunique"),
+            kpi_failures=("kpi_status", lambda x: (x == "FAIL").sum()),
+            kpi_warnings=("kpi_status", lambda x: (x == "WARN").sum()),
+            modem_resets=("event_type", lambda x: (x == "MODEM_RESET").sum()),
+            call_drops=("event_type", lambda x: (x == "CALL_DROP").sum()),
+            network_lost=("event_type", lambda x: (x == "NETWORK_LOST").sum()),
+            handover_failures=("event_type", lambda x: (x == "HANDOVER_FAILURE").sum()),
+            avg_latency_ms=("latency_ms", "mean"),
+            avg_packet_loss_pct=("packet_loss_pct", "mean"),
+        )
+        .reset_index()
+    )
+
+    summary["kpi_fail_rate_pct"] = (summary["kpi_failures"] / summary["total_events"] * 100).round(2)
+    summary["modem_reset_rate_pct"] = (summary["modem_resets"] / summary["total_events"] * 100).round(2)
+    summary["call_drop_rate_pct"] = (summary["call_drops"] / summary["total_events"] * 100).round(2)
+    summary["stability_score"] = (
+        100
+        - summary["kpi_fail_rate_pct"] * 1.2
+        - summary["modem_reset_rate_pct"] * 2.0
+        - summary["call_drop_rate_pct"] * 1.5
+        - (summary["handover_failures"] / summary["total_events"] * 100) * 1.2
+    ).clip(lower=0).round(2)
+
+    summary["firmware_verdict"] = "STABLE"
+    summary.loc[
+        (summary["stability_score"] < 85)
+        | (summary["modem_reset_rate_pct"] > 5)
+        | (summary["kpi_fail_rate_pct"] > 10),
+        "firmware_verdict",
+    ] = "NEEDS INVESTIGATION"
+    summary.loc[
+        (summary["stability_score"] < 70)
+        | (summary["modem_reset_rate_pct"] > 15)
+        | (summary["kpi_fail_rate_pct"] > 25),
+        "firmware_verdict",
+    ] = "UNSTABLE"
+
+    return summary.sort_values(by="stability_score", ascending=True)
+
+
 st.set_page_config(
-    page_title="AI-Driven Device Stability & Network KPI Validation",
+    page_title="Device Firmware Stability Dashboard",
     layout="wide",
 )
 
-st.title("AI-Driven Device Stability & Network KPI Validation")
-st.caption("Telecom device telemetry, LTE/5G/NTN KPI validation, SON recommendations, and SRE-style monitoring")
+st.title("Device Firmware Stability Dashboard")
+st.caption("Firmware stability, modem reset behavior, LTE/5G/NTN KPI validation, and network diagnostics")
 
 raw_df, clean_df, rejected_df, summary_df, son_df = load_data()
 
@@ -75,8 +125,62 @@ handover_total = filtered_df["event_type"].isin(["HANDOVER_SUCCESS", "HANDOVER_F
 handover_success_rate = safe_rate((filtered_df["event_type"] == "HANDOVER_SUCCESS").sum(), handover_total)
 avg_latency = round(filtered_df["latency_ms"].mean(), 2) if not filtered_df.empty else 0
 weak_signal_count = int(((filtered_df["rsrp"] < -110) | (filtered_df["sinr"] < 10)).sum())
+firmware_summary = build_firmware_stability_summary(filtered_df)
 
-st.header("Network Health")
+st.header("Firmware Stability Decision")
+
+if firmware_summary.empty:
+    st.warning("No records match the selected filters.")
+else:
+    worst_firmware = firmware_summary.iloc[0]
+    stable_count = int((firmware_summary["firmware_verdict"] == "STABLE").sum())
+    investigation_count = int((firmware_summary["firmware_verdict"] == "NEEDS INVESTIGATION").sum())
+    unstable_count = int((firmware_summary["firmware_verdict"] == "UNSTABLE").sum())
+
+    c1, c2, c3, c4, c5 = st.columns(5)
+    c1.metric("Worst Firmware", worst_firmware["firmware_version"])
+    c2.metric("Worst Stability Score", worst_firmware["stability_score"])
+    c3.metric("Stable Builds", stable_count)
+    c4.metric("Needs Investigation", investigation_count)
+    c5.metric("Unstable Builds", unstable_count)
+
+    st.subheader("Firmware Stability Summary")
+    st.dataframe(
+        firmware_summary[
+            [
+                "firmware_version",
+                "firmware_verdict",
+                "stability_score",
+                "total_events",
+                "devices_tested",
+                "kpi_fail_rate_pct",
+                "modem_reset_rate_pct",
+                "call_drop_rate_pct",
+                "modem_resets",
+                "call_drops",
+                "network_lost",
+                "handover_failures",
+                "avg_latency_ms",
+                "avg_packet_loss_pct",
+            ]
+        ],
+        use_container_width=True,
+    )
+
+    st.subheader("Firmware Stability Score")
+    st.bar_chart(
+        firmware_summary.sort_values(by="stability_score", ascending=False),
+        x="firmware_version",
+        y="stability_score",
+    )
+
+    st.subheader("Modem Resets by Firmware")
+    st.bar_chart(firmware_summary, x="firmware_version", y="modem_resets")
+
+    st.subheader("KPI Fail Rate by Firmware")
+    st.bar_chart(firmware_summary, x="firmware_version", y="kpi_fail_rate_pct")
+
+st.header("Network Health Diagnostics")
 
 col1, col2, col3, col4, col5 = st.columns(5)
 col1.metric("Network Health Score", network_health_score)

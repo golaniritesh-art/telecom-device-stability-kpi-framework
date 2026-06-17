@@ -182,6 +182,16 @@ def generate_telemetry(devices_df, scenario, records):
         event_type = choose_event_type(scenario)
         carrier = random.choice(CARRIERS)
         network_type = random.choice(NETWORK_TYPES)
+        firmware_version = random.choice(FIRMWARE_VERSIONS)
+
+        if scenario == "stable":
+            firmware_version = "S24_U1_6.1"
+        elif scenario == "modem_resets":
+            firmware_version = random.choices(
+                population=["S24_U2_6.1", "S24_U1_6.1", "S23_U5_6.0"],
+                weights=[70, 15, 15],
+                k=1,
+            )[0]
 
         if event_type == "LTE_ATTACH_SUCCESS":
             network_type = "LTE"
@@ -227,7 +237,7 @@ def generate_telemetry(devices_df, scenario, records):
                 "test_session_id": f"TS-{random.randint(1000, 1100)}",
                 "event_timestamp": timestamp,
                 "event_type": event_type,
-                "firmware_version": random.choice(FIRMWARE_VERSIONS),
+                "firmware_version": firmware_version,
                 "carrier": carrier,
                 "network_type": network_type,
                 "cell_id": random.choice(CELL_IDS),

@@ -2,7 +2,7 @@
 
 Demo framework for telecom device telemetry, LTE/5G/NTN event simulation, KPI validation, SON recommendations, modem log parsing, dashboard reporting, and CI/CD automation.
 
-![Telecom KPI Dashboard](image.png)
+![Device Firmware Stability Dashboard](image.png)
 
 The project stays local and beginner-friendly: Python, pandas, SQLite, pytest, Robot Framework, and Streamlit. It does not require cloud services or Docker.
 
