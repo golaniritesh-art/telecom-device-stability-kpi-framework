@@ -1,8 +1,12 @@
-# AI-Driven Device Stability & Network KPI Validation Framework
+# Telecom Device Stability & Network KPI Validation Framework
 
 Demo framework for telecom device telemetry, LTE/5G/NTN event simulation, KPI validation, SON recommendations, modem log parsing, dashboard reporting, and CI/CD automation.
 
+![Telecom KPI Dashboard](image.png)
+
 The project stays local and beginner-friendly: Python, pandas, SQLite, pytest, Robot Framework, and Streamlit. It does not require cloud services or Docker.
+
+This is a demo simulation based on the type of device stability, telecom KPI validation, network assurance, and automation work I was exposed to in a company environment. It uses synthetic data and local tooling so the workflow can be shared publicly without proprietary systems, logs, or customer data.
 
 ## Architecture
 
@@ -99,8 +103,11 @@ streamlit run dashboard/app.py
 | `registration_time_ms > 3000` | FAIL |
 | `handover_status == FAILED` | FAIL |
 
-## Sample Interview Explanation
+## Future Enhancements
 
-This project demonstrates an AI-ready telecom network assurance framework. I built a local data pipeline that simulates LTE, 5G, and NTN device telemetry, validates key radio and network KPIs, stores the results in SQLite, and exposes health metrics through a Streamlit dashboard. I also added Robot Framework tests to show how telecom validation can be automated like a QA or network acceptance suite. The SON engine generates practical recommendations such as coverage optimization, interference investigation, backhaul congestion checks, and mobility parameter review. The CI pipeline generates fresh telemetry, ingests it, runs unit tests, runs Robot tests, and uploads the reports.
+- AI-driven anomaly detection using IsolationForest or similar lightweight local models.
+- Incident and backlog triage that converts KPI failures into prioritized P1-P4 action items.
+- Suggested owners for generated incidents, such as RAN Team, Core Team, Device Team, or Transport Team.
+- Trend-based alerting for repeated failures by cell, carrier, firmware, or network type.
 
 Note: AI anomaly detection and incident triage are intentionally deferred and can be added later as separate modules.
