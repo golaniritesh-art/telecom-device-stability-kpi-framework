@@ -1,14 +1,15 @@
 import pandas as pd
 
 
+SON_COLUMNS = ["cell_id", "issue", "severity", "recommendation"]
+
+
 def generate_son_recommendations(telemetry_df):
     """Create simple rule-based SON recommendations by cell."""
     recommendations = []
 
     if telemetry_df.empty:
-        return pd.DataFrame(
-            columns=["cell_id", "issue", "severity", "recommendation"]
-        )
+        return pd.DataFrame(columns=SON_COLUMNS)
 
     for cell_id, cell_df in telemetry_df.groupby("cell_id"):
         total = len(cell_df)
@@ -32,7 +33,7 @@ def generate_son_recommendations(telemetry_df):
         if slow_registration_rate >= 0.05:
             recommendations.append(_row(cell_id, "Repeated registration failures", "HIGH", "Core/RAN signaling investigation"))
 
-    return pd.DataFrame(recommendations)
+    return pd.DataFrame(recommendations, columns=SON_COLUMNS)
 
 
 def _row(cell_id, issue, severity, recommendation):
