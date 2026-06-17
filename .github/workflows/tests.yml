@@ -1,4 +1,4 @@
-name: Run Data Pipeline Tests
+name: Telecom Device Stability CI
 
 on:
   push:
